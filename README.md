@@ -47,6 +47,8 @@ Variables utiles dans `.env` (voir `.env.example`) :
 | `RODIUMAI_MODELS` | Liste `id=Libellé,...` des modèles autorisés (≥ 2) |
 | `RODIUMAI_MODEL` | Modèle par défaut (doit être dans la liste) |
 
+Modèles autorisés par défaut : `anthropic/claude-sonnet-4-5-20250929`, `anthropic/claude-haiku-4-5-20251001`, `openai/gpt-4o-mini` (tous testés en streaming avec retour du champ `usage`). `mistral/mistral-large-3` a été essayé puis retiré : le fournisseur refusait les requêtes avec ce prompt système (filtre de contenu).
+
 ### Frontend
 
 Dans un autre terminal :

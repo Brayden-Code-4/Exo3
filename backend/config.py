@@ -13,8 +13,7 @@ RODIUMAI_API_KEY = os.environ["RODIUMAI_API_KEY"]
 DEFAULT_ALLOWED_MODELS = (
     "anthropic/claude-sonnet-4-5-20250929=Claude Sonnet 4.5,"
     "anthropic/claude-haiku-4-5-20251001=Claude Haiku 4.5,"
-    "openai/gpt-4o-mini=GPT-4o mini,"
-    "mistral/mistral-large-3=Mistral Large 3"
+    "openai/gpt-4o-mini=GPT-4o mini"
 )
 
 
