@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, String, Text, UniqueConstraint, func
+from sqlalchemy import ForeignKey, String, Text, UniqueConstraint, false, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database.db import Base
@@ -29,3 +29,9 @@ class Message(Base):
     role: Mapped[str] = mapped_column(String(20))  # "user" | "assistant" | "system-notification" | "note"
     content: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    # Assistant messages only: which model answered and how many tokens it used.
+    model: Mapped[str | None] = mapped_column(String(100))
+    prompt_tokens: Mapped[int | None]
+    completion_tokens: Mapped[int | None]
+    # True when the student pressed Stop: the content is the part generated before the stop.
+    interrupted: Mapped[bool] = mapped_column(default=False, server_default=false())
