@@ -26,6 +26,6 @@ class Message(Base):
         ForeignKey("conversations.id", name="fk_messages_conversation_id"), index=True
     )
     seq: Mapped[int]  # position of the message in its conversation, starting at 1
-    role: Mapped[str] = mapped_column(String(20))  # "user" | "assistant"
+    role: Mapped[str] = mapped_column(String(20))  # "user" | "assistant" | "system-notification" | "note"
     content: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())

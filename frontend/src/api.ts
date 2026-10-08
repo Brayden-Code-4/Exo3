@@ -1,6 +1,7 @@
 // Thin typed wrappers around the FastAPI backend (proxied under /api by Vite).
 
-export type Role = 'user' | 'assistant' | 'system-notification'
+// 'note' is our custom role: a personal note of the student, stored but never sent to the LLM.
+export type Role = 'user' | 'assistant' | 'system-notification' | 'note'
 
 export interface ConversationSummary {
   id: number
@@ -52,6 +53,13 @@ export function getMessages(conversationId: number): Promise<Message[]> {
 export interface ChatResult {
   reply: string
   notification: string | null // set when the backend also stored a system-notification
+}
+
+export function addNote(conversationId: number, content: string): Promise<Message> {
+  return request(`/conversations/${conversationId}/notes`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  })
 }
 
 export function sendMessage(conversationId: number, message: string): Promise<ChatResult> {

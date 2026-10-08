@@ -11,11 +11,21 @@ interface ChatWindowProps {
   messages: ChatMessage[]
   loading: boolean
   draft: string
+  noteMode: boolean
   onDraftChange: (value: string) => void
+  onNoteModeChange: (value: boolean) => void
   onSend: () => void
 }
 
-export default function ChatWindow({ messages, loading, draft, onDraftChange, onSend }: ChatWindowProps) {
+export default function ChatWindow({
+  messages,
+  loading,
+  draft,
+  noteMode,
+  onDraftChange,
+  onNoteModeChange,
+  onSend,
+}: ChatWindowProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   // Keep the latest message in view.
@@ -44,6 +54,11 @@ export default function ChatWindow({ messages, loading, draft, onDraftChange, on
             <div key={i} className="notification">
               {m.content}
             </div>
+          ) : m.role === 'note' ? (
+            <div key={i} className="note" title="Note personnelle : jamais envoyée au tuteur">
+              <span className="note-label">📝 Ma note</span>
+              {m.content}
+            </div>
           ) : (
             <div key={i} className={`bubble ${m.role}`}>
               {/* The LLM answers in Markdown; user messages are shown as typed. */}
@@ -54,18 +69,27 @@ export default function ChatWindow({ messages, loading, draft, onDraftChange, on
         {loading && <div className="bubble assistant typing">…</div>}
         <div ref={bottomRef} />
       </div>
-      <form className="composer" onSubmit={handleSubmit}>
+      <form className={`composer${noteMode ? ' note-mode' : ''}`} onSubmit={handleSubmit}>
+        <label className="note-toggle" title="Une note reste dans la conversation mais n'est jamais envoyée au tuteur">
+          <input
+            type="checkbox"
+            checked={noteMode}
+            onChange={(e) => onNoteModeChange(e.target.checked)}
+            disabled={loading}
+          />
+          Note
+        </label>
         <textarea
           value={draft}
           onChange={(e) => onDraftChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Écris ton message…"
+          placeholder={noteMode ? 'Écris une note pour toi (non envoyée au tuteur)…' : 'Écris ton message…'}
           rows={2}
           disabled={loading}
           autoFocus
         />
         <button type="submit" disabled={loading || !draft.trim()}>
-          Envoyer
+          {noteMode ? 'Ajouter la note' : 'Envoyer'}
         </button>
       </form>
     </section>

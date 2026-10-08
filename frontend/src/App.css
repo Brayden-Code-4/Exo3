@@ -192,6 +192,32 @@
   font-size: 0.8rem;
 }
 
+.note {
+  align-self: flex-end;
+  max-width: 70%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border-left: 4px solid var(--note-border);
+  border-radius: 4px;
+  background: var(--note-bg);
+  color: var(--note-text);
+  font-style: italic;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  transform: rotate(-0.4deg);
+}
+
+.note-label {
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+
 .bubble.typing {
   color: var(--muted);
 }
@@ -201,6 +227,21 @@
   gap: 8px;
   padding: 12px max(16px, calc((100% - 760px) / 2)) 20px;
   border-top: 1px solid var(--border);
+}
+
+.composer.note-mode textarea {
+  border-color: var(--note-border);
+  background: var(--note-bg);
+}
+
+.note-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
 }
 
 .composer textarea {

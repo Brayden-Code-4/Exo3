@@ -5,8 +5,8 @@ from pathlib import Path
 import httpx
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException
-from pydantic import BaseModel
-from sqlalchemy import and_, select
+from pydantic import BaseModel, Field
+from sqlalchemy import and_, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -25,6 +25,10 @@ LLM_ROLES = {"user", "assistant"}
 NOTIFICATION_ROLE = "system-notification"
 NOTIFICATION_EVERY = 10  # a notification each time the dialogue reaches a multiple of this many messages
 NOTIFICATION_TEXT = "Notification système : Une dizaine de messages écrits."
+# Custom role: a personal note written by the student. Shown in the chat, stored like any message,
+# but never sent to the LLM (see build_llm_history).
+NOTE_ROLE = "note"
+NOTE_MAX_LENGTH = 2000
 
 # The system prompt lives in its own Markdown file so it can be edited and reviewed like any other document.
 PROMPTS_DIR = Path(__file__).parent / "prompts"
@@ -53,6 +57,10 @@ class ChatResponse(BaseModel):
     notification: str | None = None  # set when this turn also stored a system-notification
 
 
+class NoteRequest(BaseModel):
+    content: str = Field(min_length=1, max_length=NOTE_MAX_LENGTH)
+
+
 class MessageResponse(BaseModel):
     seq: int
     role: str
@@ -72,9 +80,22 @@ def load_messages(db: Session, conversation_id: int) -> list[Message]:
 
 
 def build_llm_history(rows: list[Message]) -> list[dict]:
-    # The DB history is not necessarily what the LLM sees: filter it here, just before building the request.
-    # For now we only drop the roles the LLM doesn't know (system-notification).
-    return [{"role": m.role, "content": m.content} for m in rows if m.role in LLM_ROLES]
+    # The DB history is not necessarily what the LLM sees: it is filtered here, just before building the request.
+    history = []
+    for m in rows:
+        if m.role == NOTE_ROLE:
+            # Personal notes are private to the student: they are never sent to the LLM.
+            continue
+        if m.role not in LLM_ROLES:
+            # Other app-only roles (system-notification) are not part of the dialogue either.
+            continue
+        history.append({"role": m.role, "content": m.content})
+    return history
+
+
+def next_seq(rows: list[Message]) -> int:
+    # seq follows every stored row (notes and notifications included) so it stays unique.
+    return rows[-1].seq + 1 if rows else 1
 
 
 @app.post("/conversations", status_code=201)
@@ -87,10 +108,16 @@ def create_conversation(db: Session = Depends(get_db)) -> ConversationResponse:
 
 @app.get("/conversations")
 def list_conversations(db: Session = Depends(get_db)) -> list[ConversationSummary]:
-    # Newest first, each joined to its first message (seq 1, always the user's) for the preview.
+    # Newest first, each joined to its first user message for the preview (a note may come before it).
+    first_user_seq = (
+        select(func.min(Message.seq))
+        .where(Message.conversation_id == Conversation.id, Message.role == "user")
+        .correlate(Conversation)
+        .scalar_subquery()
+    )
     rows = db.execute(
         select(Conversation, Message.content)
-        .outerjoin(Message, and_(Message.conversation_id == Conversation.id, Message.seq == 1))
+        .outerjoin(Message, and_(Message.conversation_id == Conversation.id, Message.seq == first_user_seq))
         .order_by(Conversation.id.desc())
     ).all()
     return [
@@ -111,13 +138,29 @@ def list_messages(conversation_id: int, db: Session = Depends(get_db)) -> list[M
     ]
 
 
+@app.post("/conversations/{conversation_id}/notes", status_code=201)
+def add_note(conversation_id: int, req: NoteRequest, db: Session = Depends(get_db)) -> MessageResponse:
+    # A note is stored like any other message but triggers no LLM call.
+    content = req.content.strip()
+    if not content:
+        raise HTTPException(status_code=422, detail="La note est vide.")
+    rows = load_messages(db, conversation_id)
+    note = Message(conversation_id=conversation_id, seq=next_seq(rows), role=NOTE_ROLE, content=content)
+    db.add(note)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="The conversation was updated concurrently, please retry.")
+    return MessageResponse(seq=note.seq, role=note.role, content=note.content, created_at=note.created_at)
+
+
 @app.post("/chat")
 def chat(req: ChatRequest, db: Session = Depends(get_db)) -> ChatResponse:
     # Load this conversation from the database, in message order.
     rows = load_messages(db, req.conversation_id)
     history = build_llm_history(rows)
-    # seq follows every stored row (notifications included) so it stays unique.
-    next_seq = rows[-1].seq + 1 if rows else 1
+    seq = next_seq(rows)
     user_message = {"role": "user", "content": req.message}
 
     # The LLM is stateless: resend the system prompt + the whole conversation each turn.
@@ -143,8 +186,8 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)) -> ChatResponse:
 
     # Only record the turn once the call succeeded, so a failure doesn't leave a dangling user message.
     db.add_all([
-        Message(conversation_id=req.conversation_id, seq=next_seq, role="user", content=req.message),
-        Message(conversation_id=req.conversation_id, seq=next_seq + 1, role="assistant", content=reply),
+        Message(conversation_id=req.conversation_id, seq=seq, role="user", content=req.message),
+        Message(conversation_id=req.conversation_id, seq=seq + 1, role="assistant", content=reply),
     ])
 
     # Count only the dialogue (user + assistant): counting notifications too would shift the total
@@ -153,7 +196,7 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)) -> ChatResponse:
     if (len(history) + 2) % NOTIFICATION_EVERY == 0:
         notification = NOTIFICATION_TEXT
         db.add(Message(
-            conversation_id=req.conversation_id, seq=next_seq + 2, role=NOTIFICATION_ROLE, content=notification
+            conversation_id=req.conversation_id, seq=seq + 2, role=NOTIFICATION_ROLE, content=notification
         ))
 
     try:
@@ -164,5 +207,4 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)) -> ChatResponse:
         raise HTTPException(
             status_code=409, detail="The conversation was updated concurrently, please retry."
         )
-    print(history)
     return ChatResponse(reply=reply, notification=notification)

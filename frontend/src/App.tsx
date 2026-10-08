@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import {
+  addNote,
   createConversation,
   getMessages,
   listConversations,
@@ -20,6 +21,7 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
   const [loading, setLoading] = useState(false)
+  const [noteMode, setNoteMode] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // On startup, load the history and open the most recent conversation.
@@ -71,8 +73,26 @@ export default function App() {
     }
   }
 
+  async function handleAddNote() {
+    if (activeId === null) return
+    const text = draft.trim()
+    setError(null)
+    setDraft('')
+    setLoading(true)
+    try {
+      const note = await addNote(activeId, text)
+      setMessages((list) => [...list, { role: note.role, content: note.content }])
+    } catch (err) {
+      setDraft(text)
+      setError(errorMessage(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function handleSend() {
     if (activeId === null) return
+    if (noteMode) return handleAddNote()
     const text = draft.trim()
     const isFirstMessage = messages.length === 0
     setError(null)
@@ -127,7 +147,9 @@ export default function App() {
             messages={messages}
             loading={loading}
             draft={draft}
+            noteMode={noteMode}
             onDraftChange={setDraft}
+            onNoteModeChange={setNoteMode}
             onSend={handleSend}
           />
         )}
