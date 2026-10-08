@@ -1,0 +1,250 @@
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+}
+
+.sidebar-title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.new-button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-text);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.new-button:hover {
+  filter: brightness(1.08);
+}
+
+.conversation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.conversation-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.conversation-item:hover {
+  background: var(--bg-hover);
+}
+
+.conversation-item.active {
+  background: var(--bg-active);
+}
+
+.conversation-preview {
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.conversation-date {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* Main area */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.error {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 16px 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.error button {
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--muted);
+}
+
+/* Chat */
+.chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px max(16px, calc((100% - 760px) / 2));
+}
+
+.bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bubble.user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: var(--accent-text);
+  border-bottom-right-radius: 4px;
+}
+
+.bubble.assistant {
+  align-self: flex-start;
+  background: var(--bubble-assistant);
+  border-bottom-left-radius: 4px;
+}
+
+.bubble.assistant {
+  white-space: normal;
+}
+
+.bubble.assistant > :first-child {
+  margin-top: 0;
+}
+
+.bubble.assistant > :last-child {
+  margin-bottom: 0;
+}
+
+.bubble.assistant h1,
+.bubble.assistant h2,
+.bubble.assistant h3 {
+  margin: 0.8em 0 0.4em;
+  font-size: 1.05rem;
+}
+
+.bubble.assistant ul,
+.bubble.assistant ol {
+  padding-left: 1.4em;
+}
+
+.bubble.assistant code {
+  font-size: 0.9em;
+}
+
+.bubble.assistant pre {
+  overflow-x: auto;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.notification {
+  align-self: center;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.bubble.typing {
+  color: var(--muted);
+}
+
+.composer {
+  display: flex;
+  gap: 8px;
+  padding: 12px max(16px, calc((100% - 760px) / 2)) 20px;
+  border-top: 1px solid var(--border);
+}
+
+.composer textarea {
+  flex: 1;
+  resize: none;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.composer button {
+  padding: 0 18px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.composer button:disabled,
+.composer textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.center {
+  margin: auto;
+}
+
+@media (max-width: 640px) {
+  .app {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    max-height: 35vh;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
