@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
@@ -25,10 +26,9 @@ NOTIFICATION_ROLE = "system-notification"
 NOTIFICATION_EVERY = 10  # a notification each time the dialogue reaches a multiple of this many messages
 NOTIFICATION_TEXT = "Notification système : Une dizaine de messages écrits."
 
-SYSTEM_PROMPT = (
-    "Tu es Study Buddy, un tuteur bienveillant pour les étudiants."
-    "Réponds aux questions de manière claire et concise."
-)
+# The system prompt lives in its own Markdown file so it can be edited and reviewed like any other document.
+PROMPTS_DIR = Path(__file__).parent / "prompts"
+SYSTEM_PROMPT = (PROMPTS_DIR / "system.md").read_text(encoding="utf-8").strip()
 
 app = FastAPI(title="Study Buddy Chatbot")
 
